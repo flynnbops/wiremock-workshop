@@ -7,9 +7,10 @@ import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static io.restassured.RestAssured.given;
 
-@WireMockTest(httpPort = 9876)
+@WireMockTest(httpPort = 9877)
 public class WireMockExercises1Test {
 
 	private RequestSpecification requestSpec;
@@ -19,7 +20,7 @@ public class WireMockExercises1Test {
 
 		requestSpec = new RequestSpecBuilder().
 				setBaseUri("http://localhost").
-				setPort(9876).
+				setPort(9877).
 				build();
 	}
 
@@ -29,7 +30,15 @@ public class WireMockExercises1Test {
 		 * Create a stub that will respond to a POST
 		 * to /requestLoan with an HTTP status code 200
 		 ************************************************/
-
+		stubFor(
+						post(
+								urlEqualTo("/requestLoan")
+						)
+						.willReturn(
+						aResponse()
+										.withStatus(200)
+						)
+		);
 	}
 
 	public void setupStubExercise102() {
@@ -39,7 +48,15 @@ public class WireMockExercises1Test {
 		 * to /requestLoan with a response that contains
 		 * a Content-Type header with value application/json
 		 ************************************************/
-
+			stubFor(
+							post(
+											urlEqualTo("/requestLoan")
+							)
+											.willReturn(
+															aResponse()
+																			.withHeader("content-type", "application/json")
+											)
+			);
 	}
 
 	public void setupStubExercise103() {
@@ -50,6 +67,22 @@ public class WireMockExercises1Test {
 		 * equal to 'Loan application received!'
 		 ************************************************/
 
+		stubFor(
+						post(
+										urlEqualTo("/requestLoan")
+						)
+										.willReturn(
+														aResponse()
+																		.withStatus(200)
+																		.withBody("Loan application received!")
+										)
+		);
+
+	}
+
+	public void setupStubExercise104() {
+		// A 404
+		stubFor(post(urlEqualTo("/requestLoan/123456")).willReturn(aResponse().withStatus(404)));
 	}
 
 	@Test
@@ -96,5 +129,21 @@ public class WireMockExercises1Test {
 		then().
 				assertThat().
 				body(org.hamcrest.Matchers.equalTo("Loan application received!"));
+	}
+
+
+	@Test
+	public void testExercise104() {
+	// Just me messing around
+
+		setupStubExercise104();
+
+		given().
+						spec(requestSpec).
+						when().
+						post("/requestLoan/123456").
+						then().
+						assertThat().
+						statusCode(404);
 	}
 }
