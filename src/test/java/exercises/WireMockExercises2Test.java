@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.responseSpecification;
 
 @WireMockTest(httpPort = 9876)
 public class WireMockExercises2Test {
@@ -41,6 +42,11 @@ public class WireMockExercises2Test {
          * for an example of how to do this
          ************************************************/
 
+        stubFor(post(urlEqualTo("/requestLoan"))
+                .willReturn(aResponse()
+                    .withStatus(503)
+                    .withBody("Loan processor service unavailable"))
+        );
     }
 
     public void setupStubExercise202() {
@@ -54,6 +60,13 @@ public class WireMockExercises2Test {
          * fixed delay of 3000 milliseconds.
          ************************************************/
 
+        stubFor(post(urlEqualTo("/requestLoan"))
+                .withHeader("speed", equalTo("slow"))
+                .willReturn(aResponse()
+                        .withFixedDelay(3000)
+                        .withStatus(200)
+                )
+        );
     }
 
     public void setupStubExercise203() {
@@ -65,6 +78,10 @@ public class WireMockExercises2Test {
          *
          * Respond with a Fault of type RANDOM_DATA_THEN_CLOSE
          ************************************************/
+        stubFor(post(urlEqualTo("/requestLoan"))
+                .withCookie("session", equalTo("invalid"))
+                .willReturn(aResponse()
+                        .withFault(Fault.RANDOM_DATA_THEN_CLOSE)));
 
     }
 
@@ -77,7 +94,10 @@ public class WireMockExercises2Test {
          * - the 'backgroundCheck' header has value 'OK'
          * - the 'backgroundCheck' header is not present
          ************************************************/
-
+        stubFor(post("/requestLoan")
+                .withHeader("backgroundCheck", equalTo("OK").or(absent()))
+                .willReturn(aResponse()
+                        .withStatus(200)));
     }
 
     public void setupStubExercise205() {
@@ -92,6 +112,13 @@ public class WireMockExercises2Test {
          * field, which is a child element of 'loanDetails'
          ************************************************/
 
+        stubFor(post(urlEqualTo("/requestLoan"))
+                .withRequestBody(
+                        matchingJsonPath("$.loanDetails[?(@.amount == '1000')]")
+                )
+                .willReturn(aResponse()
+                        .withStatus(200))
+        );
     }
 
     @Test
@@ -111,7 +138,8 @@ public class WireMockExercises2Test {
                 assertThat().
                 statusCode(503).
         and().
-                statusLine(org.hamcrest.Matchers.containsString("Loan processor service unavailable"));
+                // statusLine(...) would have expected the standard 503 status line response.
+                body(org.hamcrest.Matchers.containsString("Loan processor service unavailable"));
     }
 
     @Test
